@@ -35,7 +35,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
     const h = Math.floor((totalSeconds % (3600 * 24)) / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
     const s = totalSeconds % 60;
-    return `${d}d ${h}h ${m}m ${s}s`;
+   return `${d}d ${h}h ${m}m ${s}s`;
   };
 
   const containerVariants = {
@@ -146,7 +146,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
   className="text-4xl md:text-2xl font-semibold text-center mb-8 tracking-wide text-white"
   style={{ fontFamily: "'Poppins', sans-serif" }}
 >
-  🗳️ Voting Timeline
+  🗳 Voting Timeline
 </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
@@ -232,7 +232,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
                     <motion.div variants={buttonVariants}>
                       <Button
                         onClick={() => navigate(button.route)}
-                        className={`w-full h-auto p-6 bg-gradient-to-r ${button.gradient} hover:${button.hoverGradient} border-0 shadow-lg group-hover:shadow-2xl transition-all duration-300 flex flex-col items-center gap-4 text-white`}
+                      className={`w-full h-auto p-6 bg-gradient-to-r ${button.gradient} hover:${button.hoverGradient} border-0 shadow-lg group-hover:shadow-2xl transition-all duration-300 flex flex-col items-center gap-4 text-white`}
                       >
                         <motion.div
                           animate={{ rotate: [0, 5, -5, 0] }}
@@ -343,7 +343,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
         {
           title: "End-to-End Security",
           desc: "Each vote is encrypted, stored safely, and validated with zero compromise.",
-          icon: "🛡️",
+          icon: "🛡",
           glow: "from-indigo-500 to-blue-500",
         },
         {
@@ -372,16 +372,17 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
         },
       ].map((item, idx) => (
         <motion.div
-          key={idx}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: idx * 0.1 }}
-          className={`rounded-xl bg-gradient-to-br ${item.glow} p-5 shadow-2xl text-white transform transition hover:scale-[1.02]`}
-        >
-          <div className="text-3xl mb-2">{item.icon}</div>
-          <h3 className="text-xl font-semibold mb-1">{item.title}</h3>
-          <p className="text-white/80 text-sm">{item.desc}</p>
-        </motion.div>
+  key={idx}
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6, delay: idx * 0.1 }}
+  className={`rounded-xl bg-gradient-to-br ${item.glow} p-5 shadow-2xl text-white transform transition hover:scale-[1.02]`}
+>
+  <div className="text-3xl mb-2">{item.icon}</div>
+  <h3 className="text-xl font-semibold mb-1">{item.title}</h3>
+  <p className="text-white/80 text-sm">{item.desc}</p>
+</motion.div>
+
       ))}
     </div>
   </div>
@@ -421,7 +422,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
       {
         title: "Vote",
         desc: "Make your choice with a single tap — safe, encrypted, instant.",
-        icon: "🗳️",
+        icon: "🗳",
       },
       {
         title: "Track Results",

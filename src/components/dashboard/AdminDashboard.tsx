@@ -209,10 +209,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         transition={{ duration: 0.5 }}
       >
         <div className="flex items-center gap-3 mb-8">
+<<<<<<< HEAD
           <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
             <Shield className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+=======
+          <div className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-600">
+            <Shield className="h-6 w-6 text-white" />
+          </div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+>>>>>>> 1a4c064 (New changes made)
             Admin Panel
           </h1>
         </div>
@@ -312,7 +319,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Dashboard Home */}
           {activeTab === "home" && (
             <motion.div variants={itemVariants}>
+<<<<<<< HEAD
               <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+=======
+              <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+>>>>>>> 1a4c064 (New changes made)
                 Admin Dashboard
               </h1>
 

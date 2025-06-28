@@ -180,8 +180,13 @@ const LoginForm = ({ onLogin = () => {} }: LoginFormProps) => {
             >
               {getRoleIcon()}
             </motion.div>
+<<<<<<< HEAD
             <CardTitle className="text-2xl font-bold text-white">
               Election Portal Login
+=======
+            <CardTitle className="text-2xl font-bold text-white font-sans">
+              VoteCast Login
+>>>>>>> 1a4c064 (New changes made)
             </CardTitle>
             <CardDescription className="text-gray-300">
               Sign in to access the election portal
@@ -241,7 +246,11 @@ const LoginForm = ({ onLogin = () => {} }: LoginFormProps) => {
                     <Input
                       id="username"
                       type="text"
+<<<<<<< HEAD
                       placeholder="Enter your username"
+=======
+                      placeholder="Enter ID"
+>>>>>>> 1a4c064 (New changes made)
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40"

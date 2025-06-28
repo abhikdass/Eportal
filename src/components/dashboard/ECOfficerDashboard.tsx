@@ -300,10 +300,17 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
         transition={{ duration: 0.5 }}
       >
         <div className="flex items-center gap-3 mb-8">
+<<<<<<< HEAD
           <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-600">
             <UserCog className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+=======
+          <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-600">
+            <UserCog className="h-6 w-6 text-white" />
+          </div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+>>>>>>> 1a4c064 (New changes made)
             EC Officer Panel
           </h1>
         </div>
@@ -403,7 +410,11 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
           {/* Dashboard Home */}
           {activeTab === "home" && (
             <motion.div variants={itemVariants}>
+<<<<<<< HEAD
               <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+=======
+              <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+>>>>>>> 1a4c064 (New changes made)
                 EC Officer Dashboard
               </h1>
 

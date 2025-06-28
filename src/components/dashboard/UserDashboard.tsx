@@ -5,6 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+<<<<<<< HEAD
+=======
+import Charts from "./Charts";
+>>>>>>> 1a4c064 (New changes made)
 import {
   BarChart3,
   Users,
@@ -24,7 +28,11 @@ interface UserDashboardProps {
 }
 
 const UserDashboard: React.FC<UserDashboardProps> = ({
+<<<<<<< HEAD
   username = "John Doe",
+=======
+  username = "Pallab sarkar",
+>>>>>>> 1a4c064 (New changes made)
   onLogout = () => {
     // Clear any stored auth data
     localStorage.removeItem("userAuth");
@@ -80,7 +88,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           <div className="p-2 rounded-full bg-primary/10">
             <Vote className="h-6 w-6 text-primary" />
           </div>
+<<<<<<< HEAD
           <h1 className="text-xl font-bold">Election Portal</h1>
+=======
+          <h1 className="text-xl font-bold">VoteCast.</h1>
+>>>>>>> 1a4c064 (New changes made)
         </div>
 
         <div className="flex-1">
@@ -403,7 +415,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
                   </CardContent>
                 </Card>
+<<<<<<< HEAD
 
+=======
+                    <Charts/>
+>>>>>>> 1a4c064 (New changes made)
                 <Card>
                   <CardContent className="p-6">
                     <h2 className="text-xl font-bold mb-4">
@@ -510,10 +526,61 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                       process, please contact:
                     </p>
                     <p className="mb-1">
+<<<<<<< HEAD
                       <strong>Election Commission Office</strong>
                     </p>
                     <p className="mb-1">Email: ec-office@example.edu</p>
                     <p className="mb-4">Phone: (123) 456-7890</p>
+=======
+                      <strong>VoteCast Office</strong>
+                    </p>
+                    <p className="mb-1">Email: ec-office@example.edu</p>
+                    <p className="mb-4">Phone: +91 9339038243</p>
+
+                   <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-800">Development Team Details</h2>
+<p className="text-gray-600 mb-6">
+  Our team members who supported technically in the development of this project!
+</p>
+
+{/* Frontend Engineers */}
+<div className="mb-6">
+  <h3 className="text-lg font-semibold text-indigo-700 mb-2">Frontend Engineers</h3>
+  <ul className="space-y-2 text-sm text-gray-700">
+    <li>
+      <strong>Aryan Sharma</strong> – 📞 9876543210 – ✉️ aryan.sharma@email.com
+    </li>
+    <li>
+      <strong>Meera Kapoor</strong> – 📞 9123456789 – ✉️ meera.kapoor@email.com
+    </li>
+  </ul>
+</div>
+
+{/* Backend Engineers */}
+<div className="mb-6">
+  <h3 className="text-lg font-semibold text-indigo-700 mb-2">Backend Engineers</h3>
+  <ul className="space-y-2 text-sm text-gray-700">
+    <li>
+      <strong>Ravi Deshmukh</strong> – 📞 9988776655 – ✉️ ravi.deshmukh@email.com
+    </li>
+    <li>
+      <strong>Sneha Iyer</strong> – 📞 9012345678 – ✉️ sneha.iyer@email.com
+    </li>
+  </ul>
+</div>
+
+{/* Documentation & Support */}
+<div className="mb-6">
+  <h3 className="text-lg font-semibold text-indigo-700 mb-2">Documentation and Support Engineers</h3>
+  <ul className="space-y-2 text-sm text-gray-700">
+    <li>
+      <strong>Priya Nair</strong> – 📞 9900112233 – ✉️ priya.nair@email.com
+    </li>
+    <li>
+      <strong>Aditya Roy</strong> – 📞 9870011223 – ✉️ aditya.roy@email.com
+    </li>
+  </ul>
+</div>
+>>>>>>> 1a4c064 (New changes made)
 
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mt-6">
                       <h3 className="text-lg font-bold mb-2 text-blue-700 dark:text-blue-300">
