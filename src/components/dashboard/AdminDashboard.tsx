@@ -8,6 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useEffect } from "react";
+import {
   Shield,
   Database,
   MemoryStick,
@@ -34,14 +42,46 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  username = "Admin User",
+  // username = "Admin User",
+  
   onLogout = () => {
     // Clear any stored auth data
-    localStorage.removeItem("adminAuth");
+    localStorage.removeItem("token");
     // Navigate to home
     window.location.href = "/";
   },
 }) => {
+    const [userName, setUserName] = useState<string>("Admin");
+  const [role, setRole] = useState<string>("admin");
+  const [databaseStats, setDatabaseStats] = useState({
+  students: 0,
+  teachers: 0,
+  totalUsers: 0,
+  activeElections: 0,
+  totalVotes: 0,
+});
+
+const [systemStats, setSystemStats] = useState({
+  cpuUsage: 0,
+  diskUsage: 68,
+  networkActivity: 42,
+  uptime: "0 days, 0 hours",
+});
+
+const [memoryStats, setMemoryStats] = useState({
+  total: "0 MB",
+  used: "0 MB",
+  free: "0 MB",
+  usage: 0,
+});
+
+
+  useEffect(() => {
+    const storedName = localStorage.getItem("name");
+    const storedRole = localStorage.getItem("role");
+    if (storedName) setUserName(storedName);
+    if (storedRole) setRole(storedRole);
+  }, []);
   const [activeTab, setActiveTab] = useState<string>("home");
   const [ecOfficers, setEcOfficers] = useState([
     { id: 1, name: "John Smith", email: "john@example.com", status: "Active" },
@@ -58,8 +98,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       status: "Inactive",
     },
   ]);
-  const [newOfficer, setNewOfficer] = useState({ name: "", email: "" });
+  const [newOfficer, setNewOfficer] = useState({ name: "", username: "" });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState<string>("");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [alert, setAlert] = useState<{
     type: "success" | "error";
     message: string;
@@ -89,44 +132,128 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     },
   ];
 
-  const memoryStats = {
-    total: "16 GB",
-    used: "8.4 GB",
-    free: "7.6 GB",
-    usage: 52.5,
+useEffect(() => {
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch stats");
+
+      const data = await res.json();
+
+      // Update all state with real data
+      setDatabaseStats({
+        students: data.students || 0,
+        teachers: data.teachers || 0,
+        totalUsers: data.users || 0,
+        activeElections: data.activeElections || 0,
+        totalVotes: data.totalVotes || 0,
+      });
+
+      setSystemStats({
+        cpuUsage: parseFloat(data.cpu.user.replace(" ms", "")) / 1000 || 0,
+        diskUsage: 68, // optional if not coming from API
+        networkActivity: 42, // optional if not coming from API
+        uptime: `${Math.floor(data.uptime / 24)} days, ${Math.floor(data.uptime % 24)} hours`,
+      });
+
+      setMemoryStats({
+        total: "N/A",
+        used: data.memory.heapUsed,
+        free: "N/A",
+        usage:
+          (parseFloat(data.memory.heapUsed) / parseFloat(data.memory.heapTotal)) * 100 || 0,
+      });
+
+      setEcOfficers(
+        data.ecOfficerDocs.map((officer: any, idx: number) => ({
+          id: idx + 1,
+          name: officer.name,
+          email: officer.username,
+          status: "Active",
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to fetch admin stats:", err);
+    }
   };
 
-  const databaseStats = {
-    students: 1250,
-    teachers: 85,
-    totalUsers: 1335,
-    activeElections: 2,
-    totalVotes: 892,
+  fetchStats();
+}, []);
+
+
+  const generatePassword = (): string => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
   };
 
-  const systemStats = {
-    cpuUsage: 35,
-    diskUsage: 68,
-    networkActivity: 42,
-    uptime: "15 days, 8 hours",
-  };
+  const handleAddOfficer = async () => {
+    if (!newOfficer.name || !newOfficer.username) {
+      setAlert({ type: "error", message: "Please fill in all fields!" });
+      setTimeout(() => setAlert(null), 3000);
+      return;
+    }
 
-  const handleAddOfficer = () => {
-    if (newOfficer.name && newOfficer.email) {
-      const newId = Math.max(...ecOfficers.map((o) => o.id)) + 1;
+    setIsLoading(true);
+    const password = generatePassword();
+    console.log("Generated password:", password);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register/ec`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newOfficer.name,
+          username: newOfficer.username,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to register EC Officer");
+      }
+
+      // Add to local state
+      const newId = Math.max(...ecOfficers.map((o) => o.id), 0) + 1;
       setEcOfficers([
         ...ecOfficers,
         {
           id: newId,
           name: newOfficer.name,
-          email: newOfficer.email,
+          email: newOfficer.username,
           status: "Active",
         },
       ]);
-      setNewOfficer({ name: "", email: "" });
+
+      // Reset form and show success
+      setNewOfficer({ name: "", username: "" });
       setShowAddForm(false);
-      setAlert({ type: "success", message: "EC Officer added successfully!" });
+      setGeneratedPassword(password);
+      setShowPasswordModal(true);
+      setAlert({ type: "success", message: "EC Officer registered successfully!" });
       setTimeout(() => setAlert(null), 3000);
+    } catch (error: any) {
+      setAlert({ type: "error", message: error.message });
+      setTimeout(() => setAlert(null), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -246,14 +373,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex items-center gap-3 mb-4">
             <Avatar>
               <AvatarImage
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`}
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`}
               />
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                {username.substring(0, 2).toUpperCase()}
+                {userName.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{username}</p>
+              <p className="font-medium">{userName}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Administrator
               </p>
@@ -629,28 +756,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           />
                         </div>
                         <div>
-                          <Label htmlFor="email">Email Address</Label>
+                          <Label htmlFor="username">Username</Label>
                           <Input
-                            id="email"
-                            type="email"
-                            value={newOfficer.email}
+                            id="username"
+                            type="text"
+                            value={newOfficer.username}
                             onChange={(e) =>
                               setNewOfficer({
                                 ...newOfficer,
-                                email: e.target.value,
+                                username: e.target.value,
                               })
                             }
-                            placeholder="Enter email address"
+                            placeholder="Enter username"
                           />
                         </div>
                       </div>
                       <div className="flex gap-2 mt-4">
                         <Button
                           onClick={handleAddOfficer}
+                          disabled={isLoading}
                           className="bg-green-600 hover:bg-green-700"
                         >
                           <UserPlus className="mr-2 h-4 w-4" />
-                          Add Officer
+                          {isLoading ? "Adding..." : "Add Officer"}
                         </Button>
                         <Button
                           variant="outline"
@@ -689,7 +817,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div>
                             <h3 className="font-medium">{officer.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {officer.email}
+                              Username: {officer.email}
                             </p>
                             <span
                               className={`inline-block px-2 py-1 text-xs rounded-full ${
@@ -765,6 +893,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
         </motion.div>
       </motion.div>
+
+      {/* Password Modal */}
+      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>EC Officer Registration Successful</DialogTitle>
+            <DialogDescription>
+              The EC Officer has been successfully registered. Please share the following credentials with them:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-sm font-medium text-green-800 dark:text-green-200">
+                    Username
+                  </Label>
+                  <p className="font-mono text-sm bg-white dark:bg-gray-800 p-2 rounded border">
+                    {newOfficer.username}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-green-800 dark:text-green-200">
+                    Generated Password
+                  </Label>
+                  <p className="font-mono text-sm bg-white dark:bg-gray-800 p-2 rounded border">
+                    {generatedPassword}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+              ⚠️ Please save these credentials securely. The password will not be shown again.
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(`Password: ${generatedPassword}`);
+                  setAlert({ type: "success", message: "Credentials copied to clipboard!" });
+                  setTimeout(() => setAlert(null), 3000);
+                }}
+              >
+                Copy Credentials
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setGeneratedPassword("");
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

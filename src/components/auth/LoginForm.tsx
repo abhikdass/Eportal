@@ -57,49 +57,64 @@ const LoginForm = ({ onLogin = () => {} }: LoginFormProps) => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (!username.trim() || !password.trim()) {
-      setError("Username and password are required");
-      return;
+  if (!username.trim() || !password.trim()) {
+    setError("Username and password are required");
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        password,
+        role: activeTab,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Login failed. Please try again.");
     }
 
-    setIsLoading(true);
+    // Optional: store token or user data if provided
+    // ✅ Store token and name
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("name", data.name);
+    localStorage.setItem("role", data.role); 
 
-    try {
-      // Mock authentication - in a real app, this would be an API call
-      const encryptedPassword = encryptPassword(password);
-      console.log(
-        `Logging in as ${activeTab} with encrypted password: ${encryptedPassword}`,
-      );
+    onLogin(activeTab, username);
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Mock successful login
-      onLogin(activeTab, username);
-
-      // Navigate to the appropriate dashboard based on role
-      switch (activeTab) {
-        case "user":
-          navigate("/user-dashboard");
-          break;
-        case "ec-officer":
-          navigate("/ec-officer-dashboard");
-          break;
-        case "admin":
-          navigate("/admin-dashboard");
-          break;
-        default:
-          navigate("/user-dashboard");
-      }
-    } catch (err) {
-      setError("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
+    // Navigate to respective dashboard
+    switch (activeTab) {
+      case "user":
+        navigate("/user-dashboard");
+        break;
+      case "ec-officer":
+        navigate("/ec-officer-dashboard");
+        break;
+      case "admin":
+        navigate("/admin-dashboard");
+        break;
+      default:
+        navigate("/user-dashboard");
     }
-  };
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const containerVariants = {
     hidden: { opacity: 0, y: 30 },
