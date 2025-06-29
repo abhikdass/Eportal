@@ -83,7 +83,8 @@ const LoginForm = ({ onLogin = () => {} }: LoginFormProps) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Login failed. Please try again.");
+      // console.error("Login failed:", data);
+      throw new Error(data.error || "Login failed. Please try again.");
     }
 
     // Optional: store token or user data if provided

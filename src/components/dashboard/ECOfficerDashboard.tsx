@@ -89,6 +89,7 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
         email: student.username || student.email || "N/A", // Store username in email field for display
         department: student.department || "N/A",
         year: student.year || "N/A",
+        _id: student._id,
       }));
 
       setStudents(formattedStudents);
@@ -270,10 +271,49 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
       setTimeout(() => setAlert(null), 3000);
     }
   };
+
+  // Fetch candidates for a specific election
+  const fetchElectionCandidates = async (electionId: string) => {
+    try {
+      setIsLoadingElectionCandidates(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ec/candidate/${electionId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch election candidates");
+
+      const data = await response.json();
+      setElectionCandidates(data);
+    } catch (error) {
+      console.error("Failed to fetch election candidates:", error);
+      setAlert({ type: "error", message: "Failed to load election candidates" });
+      setTimeout(() => setAlert(null), 3000);
+    } finally {
+      setIsLoadingElectionCandidates(false);
+    }
+  };
+
+  // Open election details modal
+  const openElectionDetails = (election: any) => {
+    setSelectedElection(election);
+    fetchElectionCandidates(election._id);
+    setShowElectionDetailsModal(true);
+  };
+
   const [activeTab, setActiveTab] = useState<string>("home");
   const [elections, setElections] = useState([]);
   const [isLoadingElections, setIsLoadingElections] = useState(true);
   const [showCreateElectionForm, setShowCreateElectionForm] = useState(false);
+  // Add new state for election details and candidates
+  const [showElectionDetailsModal, setShowElectionDetailsModal] = useState(false);
+  const [selectedElection, setSelectedElection] = useState(null);
+  const [electionCandidates, setElectionCandidates] = useState([]);
+  const [isLoadingElectionCandidates, setIsLoadingElectionCandidates] = useState(false);
   const [newElection, setNewElection] = useState({
     title: "",
     description: "",
@@ -304,37 +344,14 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
   const [students, setStudents] = useState([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
 
-  const [teachers, setTeachers] = useState([
-    {
-      id: 1,
-      name: "Dr. Sarah Wilson",
-      email: "sarah@faculty.edu",
-      department: "Computer Science",
-      position: "Professor",
-    },
-    {
-      id: 2,
-      name: "Prof. Robert Brown",
-      email: "robert@faculty.edu",
-      department: "Engineering",
-      position: "Associate Professor",
-    },
-  ]);
-
   const [newStudent, setNewStudent] = useState({
+    "_id": "",
     name: "",
     username: "",
     department: "",
     year: "",
   });
-  const [newTeacher, setNewTeacher] = useState({
-    name: "",
-    email: "",
-    department: "",
-    position: "",
-  });
   const [showAddStudentForm, setShowAddStudentForm] = useState(false);
-  const [showAddTeacherForm, setShowAddTeacherForm] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState<string>("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -503,6 +520,8 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
         body: JSON.stringify({
           name: newStudent.name,
           username: newStudent.username,
+          department: newStudent.department,
+          year: newStudent.year,
           password: password,
         }),
       });
@@ -517,7 +536,7 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
       await fetchStudents();
 
       // Reset form and show success
-      setNewStudent({ name: "", username: "", department: "", year: "" });
+      setNewStudent({_id:"", name: "", username: "", department: "", year: "" });
       setShowAddStudentForm(false);
       setGeneratedPassword(password);
       setShowPasswordModal(true);
@@ -531,33 +550,38 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
     }
   };
 
-  const handleAddTeacher = () => {
-    if (
-      newTeacher.name &&
-      newTeacher.email &&
-      newTeacher.department &&
-      newTeacher.position
-    ) {
-      const newId = Math.max(...teachers.map((t) => t.id)) + 1;
-      setTeachers([...teachers, { id: newId, ...newTeacher }]);
-      setNewTeacher({ name: "", email: "", department: "", position: "" });
-      setShowAddTeacherForm(false);
-      setAlert({ type: "success", message: "Teacher added successfully!" });
-      setTimeout(() => setAlert(null), 3000);
+ 
+const handleRemoveStudent = async (id: number) => {
+  try {
+    const student = students.find((s) => s.id === id);
+    console.log("Removing student:", student);
+    if (!student || !student._id) return;
+
+    const token = localStorage.getItem("token");
+    // Use student._id for API call
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ec/students/${student._id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to remove student");
     }
-  };
 
-  const handleRemoveStudent = (id: number) => {
-    setStudents(students.filter((student) => student.id !== id));
-    setAlert({ type: "success", message: "Student removed successfully!" });
+    await fetchStudents();
+    setAlert({ type: "success", message: data.message || "Student removed successfully!" });
     setTimeout(() => setAlert(null), 3000);
-  };
+  } catch (error: any) {
+    setAlert({ type: "error", message: error.message || "Failed to remove student" });
+    setTimeout(() => setAlert(null), 3000);
+  }
+};
 
-  const handleRemoveTeacher = (id: number) => {
-    setTeachers(teachers.filter((teacher) => teacher.id !== id));
-    setAlert({ type: "success", message: "Teacher removed successfully!" });
-    setTimeout(() => setAlert(null), 3000);
-  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -753,12 +777,6 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
                   icon={<GraduationCap className="h-6 w-6 text-blue-600" />}
                   color="bg-blue-500"
                 />
-                <StatCard
-                  title="Total Teachers"
-                  value={teachers.length}
-                  icon={<BookOpen className="h-6 w-6 text-purple-600" />}
-                  color="bg-purple-500"
-                />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -856,230 +874,263 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
               </div>
             </motion.div>
           )}
+{/* Election Management */}
+{activeTab === "elections" && (
+  <motion.div variants={itemVariants}>
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+        Election Management
+      </h1>
+      <Button
+        onClick={() => setShowCreateElectionForm(!showCreateElectionForm)}
+        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Create Election
+      </Button>
+    </div>
 
-          {/* Election Management */}
-          {activeTab === "elections" && (
-            <motion.div variants={itemVariants}>
-              <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Election Management
-              </h1>
-
-              <div className="grid grid-cols-1 gap-6">
-                {/* Create New Election */}
-                <Card className="hover:shadow-lg transition-all duration-300">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle>Create New Election</CardTitle>
-                      <Button
-                        onClick={() => setShowCreateElectionForm(!showCreateElectionForm)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Election
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  {showCreateElectionForm && (
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Label htmlFor="election-title">Election Title</Label>
-                          <Input
-                            id="election-title"
-                            value={newElection.title}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, title: e.target.value })
-                            }
-                            placeholder="Student Council Election 2024"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Label htmlFor="election-description">Description</Label>
-                          <Textarea
-                            id="election-description"
-                            value={newElection.description}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, description: e.target.value })
-                            }
-                            placeholder="Annual student council election description"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="election-post">Positions</Label>
-                          <Input
-                            id="election-post"
-                            value={newElection.post}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, post: e.target.value })
-                            }
-                            placeholder="President, Vice President, Secretary"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="election-type">Election Type</Label>
-                          <Input
-                            id="election-type"
-                            value={newElection.type}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, type: e.target.value })
-                            }
-                            placeholder="Student Council"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="nomination-start">Nomination Start</Label>
-                          <Input
-                            id="nomination-start"
-                            type="datetime-local"
-                            value={newElection.nominationStartDate}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, nominationStartDate: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="nomination-end">Nomination End</Label>
-                          <Input
-                            id="nomination-end"
-                            type="datetime-local"
-                            value={newElection.nominationEndDate}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, nominationEndDate: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="campaign-start">Campaign Start</Label>
-                          <Input
-                            id="campaign-start"
-                            type="datetime-local"
-                            value={newElection.campaignStartDate}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, campaignStartDate: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="campaign-end">Campaign End</Label>
-                          <Input
-                            id="campaign-end"
-                            type="datetime-local"
-                            value={newElection.campaignEndDate}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, campaignEndDate: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="voting-date">Voting Date</Label>
-                          <Input
-                            id="voting-date"
-                            type="datetime-local"
-                            value={newElection.votingDate}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, votingDate: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="result-date">Result Announcement</Label>
-                          <Input
-                            id="result-date"
-                            type="datetime-local"
-                            value={newElection.resultAnnouncementDate}
-                            onChange={(e) =>
-                              setNewElection({ ...newElection, resultAnnouncementDate: e.target.value })
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2 mt-6">
-                        <Button
-                          onClick={handleCreateElection}
-                          disabled={isLoading}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          {isLoading ? "Creating..." : "Create Election"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowCreateElectionForm(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-
-                {/* Existing Elections */}
-                <Card className="hover:shadow-lg transition-all duration-300">
-                  <CardHeader>
-                    <CardTitle>Existing Elections</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {isLoadingElections ? (
-                        <div className="flex items-center justify-center p-4">
-                          <div className="text-sm text-muted-foreground">Loading elections...</div>
-                        </div>
-                      ) : elections.length === 0 ? (
-                        <div className="flex items-center justify-center p-4">
-                          <div className="text-sm text-muted-foreground">No elections found</div>
-                        </div>
-                      ) : (
-                        elections.map((election: any) => (
-                          <div
-                            key={election._id}
-                            className="flex items-center justify-between p-4 border rounded-lg"
-                          >
-                            <div>
-                              <h3 className="font-medium">{election.title}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {election.description}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Positions: {election.post}
-                              </p>
-                              <div className="flex gap-2 mt-2">
-                                <span
-                                  className={`px-2 py-1 text-xs rounded-full ${
-                                    election.active
-                                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
-                                      : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300"
-                                  }`}
-                                >
-                                  {election.active ? "Active" : "Inactive"}
-                                </span>
-                                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                                  {election.type}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleToggleElectionStatus(election._id, election.active)}
-                                className={
-                                  election.active
-                                    ? "text-orange-500 hover:text-orange-600"
-                                    : "text-green-500 hover:text-green-600"
-                                }
-                              >
-                                {election.active ? "Deactivate" : "Activate"}
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+    {/* Create Election Form */}
+    {showCreateElectionForm && (
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: "auto" }}
+        exit={{ opacity: 0, height: 0 }}
+        className="mb-6"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New Election</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title">Election Title</Label>
+                <Input
+                  id="title"
+                  value={newElection.title}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, title: e.target.value })
+                  }
+                  placeholder="Student Council Election 2024"
+                />
               </div>
-            </motion.div>
-          )}
+              <div>
+                <Label htmlFor="type">Election Type</Label>
+                <Select
+                  value={newElection.type}
+                  onValueChange={(value) =>
+                    setNewElection({ ...newElection, type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select election type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Student Council">Student Council</SelectItem>
+                    <SelectItem value="Class Representative">Class Representative</SelectItem>
+                    <SelectItem value="Department Representative">Department Representative</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={newElection.description}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, description: e.target.value })
+                  }
+                  placeholder="Annual student council election for academic year 2024-25"
+                  rows={3}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="post">Positions/Posts</Label>
+                <Select
+                  value={newElection.post}
+                  onValueChange={(value) =>
+                    setNewElection({ ...newElection, post: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select election post" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="President">President</SelectItem>
+                    <SelectItem value="Vice President">Vice President</SelectItem>
+                    <SelectItem value="Secretary">Secretary</SelectItem>
+                    <SelectItem value="Treasurer">Treasurer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="nominationStart">Nomination Start Date</Label>
+                <Input
+                  id="nominationStart"
+                  type="datetime-local"
+                  value={newElection.nominationStartDate}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, nominationStartDate: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="nominationEnd">Nomination End Date</Label>
+                <Input
+                  id="nominationEnd"
+                  type="datetime-local"
+                  value={newElection.nominationEndDate}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, nominationEndDate: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="campaignStart">Campaign Start Date</Label>
+                <Input
+                  id="campaignStart"
+                  type="datetime-local"
+                  value={newElection.campaignStartDate}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, campaignStartDate: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="campaignEnd">Campaign End Date</Label>
+                <Input
+                  id="campaignEnd"
+                  type="datetime-local"
+                  value={newElection.campaignEndDate}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, campaignEndDate: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="votingDate">Voting Date</Label>
+                <Input
+                  id="votingDate"
+                  type="datetime-local"
+                  value={newElection.votingDate}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, votingDate: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="resultDate">Result Announcement Date</Label>
+                <Input
+                  id="resultDate"
+                  type="datetime-local"
+                  value={newElection.resultAnnouncementDate}
+                  onChange={(e) =>
+                    setNewElection({ ...newElection, resultAnnouncementDate: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button
+                onClick={handleCreateElection}
+                disabled={isLoading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isLoading ? "Creating..." : "Create Election"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateElectionForm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )}
 
+    {/* Elections List */}
+    <Card>
+      <CardHeader>
+        <CardTitle>All Elections</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoadingElections ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading elections...</p>
+          </div>
+        ) : elections.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No elections found.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {elections.map((election) => (
+              <motion.div
+                key={election._id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex-1">
+                  <h3 className="font-medium text-lg">{election.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {election.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {election.type}
+                    </span>
+                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                      {election.post}
+                    </span>
+                    <span>
+                      Voting: {new Date(election.votingDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-3 py-1 text-sm rounded-full ${
+                      election.active
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300"
+                    }`}
+                  >
+                    {election.active ? "Active" : "Inactive"}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openElectionDetails(election)}
+                    className="text-blue-600 hover:text-blue-700 border-blue-200 mr-2"
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleToggleElectionStatus(election._id, election.active)}
+                    className={
+                      election.active
+                        ? "text-red-600 hover:text-red-700 border-red-200"
+                        : "text-green-600 hover:text-green-700 border-green-200"
+                    }
+                  >
+                    {election.active ? "Deactivate" : "Activate"}
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  </motion.div>
+)}
+         
           {/* Election Dates */}
           {activeTab === "dates" && (
             <motion.div variants={itemVariants}>
@@ -1319,7 +1370,7 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
                 Database Management
               </h1>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 {/* Students Management */}
                 <Card className="hover:shadow-lg transition-all duration-300">
                   <CardHeader>
@@ -1369,16 +1420,6 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
                               })
                             }
                           />
-                          <Input
-                            placeholder="Department"
-                            value={newStudent.department}
-                            onChange={(e) =>
-                              setNewStudent({
-                                ...newStudent,
-                                department: e.target.value,
-                              })
-                            }
-                          />
                           <Select
                             value={newStudent.year}
                             onValueChange={(value) =>
@@ -1389,10 +1430,27 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
                               <SelectValue placeholder="Select Year" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="1st Year">1st Year</SelectItem>
-                              <SelectItem value="2nd Year">2nd Year</SelectItem>
-                              <SelectItem value="3rd Year">3rd Year</SelectItem>
-                              <SelectItem value="4th Year">4th Year</SelectItem>
+                              <SelectItem value="1">1st Year</SelectItem>
+                              <SelectItem value="2">2nd Year</SelectItem>
+                              <SelectItem value="3">3rd Year</SelectItem>
+                              <SelectItem value="4">4th Year</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={newStudent.department}
+                            onValueChange={(value) =>
+                              setNewStudent({ ...newStudent, department: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="BCA">Computer Applications</SelectItem>
+                              <SelectItem value="CSE">Computer Science</SelectItem>
+                              <SelectItem value="ECE">Electronics</SelectItem>
+                              <SelectItem value="ME">Mechanical</SelectItem>
+                              <SelectItem value="CE">Civil Engineering</SelectItem>
                             </SelectContent>
                           </Select>
                           <div className="flex gap-2">
@@ -1456,141 +1514,6 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
                           </div>
                         ))
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Teachers Management */}
-                <Card className="hover:shadow-lg transition-all duration-300">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5" />
-                        Teachers Management
-                      </CardTitle>
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          setShowAddTeacherForm(!showAddTeacherForm)
-                        }
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Teacher
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {showAddTeacherForm && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        className="mb-4 p-4 border rounded-lg bg-purple-50 dark:bg-purple-900/20"
-                      >
-                        <div className="grid grid-cols-1 gap-3">
-                          <Input
-                            placeholder="Teacher Name"
-                            value={newTeacher.name}
-                            onChange={(e) =>
-                              setNewTeacher({
-                                ...newTeacher,
-                                name: e.target.value,
-                              })
-                            }
-                          />
-                          <Input
-                            placeholder="Email"
-                            type="email"
-                            value={newTeacher.email}
-                            onChange={(e) =>
-                              setNewTeacher({
-                                ...newTeacher,
-                                email: e.target.value,
-                              })
-                            }
-                          />
-                          <Input
-                            placeholder="Department"
-                            value={newTeacher.department}
-                            onChange={(e) =>
-                              setNewTeacher({
-                                ...newTeacher,
-                                department: e.target.value,
-                              })
-                            }
-                          />
-                          <Select
-                            value={newTeacher.position}
-                            onValueChange={(value) =>
-                              setNewTeacher({ ...newTeacher, position: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select Position" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Professor">
-                                Professor
-                              </SelectItem>
-                              <SelectItem value="Associate Professor">
-                                Associate Professor
-                              </SelectItem>
-                              <SelectItem value="Assistant Professor">
-                                Assistant Professor
-                              </SelectItem>
-                              <SelectItem value="Lecturer">Lecturer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={handleAddTeacher}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Add
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setShowAddTeacherForm(false)}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {teachers.map((teacher) => (
-                        <div
-                          key={teacher.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">{teacher.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {teacher.email}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {teacher.department} - {teacher.position}
-                            </p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="outline">
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRemoveTeacher(teacher.id)}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </CardContent>
                 </Card>
@@ -1679,7 +1602,7 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
               <Button
                 variant="outline"
                 onClick={() => {
-                  navigator.clipboard.writeText(`Username: ${newStudent.username}\nPassword: ${generatedPassword}`);
+                  navigator.clipboard.writeText(`Password: ${generatedPassword}`);
                   setAlert({ type: "success", message: "Credentials copied to clipboard!" });
                   setTimeout(() => setAlert(null), 3000);
                 }}
@@ -1695,6 +1618,176 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
                 Close
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Modal */}
+      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Candidate Application</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="rejectionReason">Reason for Rejection</Label>
+              <Textarea
+                id="rejectionReason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Please provide a detailed reason for rejecting this candidate application..."
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectionReason("");
+                  setSelectedCandidateId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRejectWithReason}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reject Candidate
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Election Details Modal */}
+      <Dialog open={showElectionDetailsModal} onOpenChange={setShowElectionDetailsModal}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Election Details</DialogTitle>
+          </DialogHeader>
+          {selectedElection && (
+            <div className="space-y-6">
+              {/* Election Information */}
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h3 className="text-xl font-bold mb-2">{selectedElection.title}</h3>
+                <p className="text-muted-foreground mb-4">{selectedElection.description}</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-muted-foreground">Position</h4>
+                    <p>{selectedElection.post}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-muted-foreground">Type</h4>
+                    <p>{selectedElection.type}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-muted-foreground">Status</h4>
+                    <p>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        selectedElection.active 
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}>
+                        {selectedElection.active ? "Active" : "Inactive"}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Election Timeline */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Election Timeline</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <span className="font-medium">Nomination Period</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(selectedElection.nominationStartDate).toLocaleDateString()} - {" "}
+                      {new Date(selectedElection.nominationEndDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <span className="font-medium">Campaign Period</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(selectedElection.campaignStartDate).toLocaleDateString()} - {" "}
+                      {new Date(selectedElection.campaignEndDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <span className="font-medium">Voting Date</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(selectedElection.votingDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <span className="font-medium">Results Announcement</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(selectedElection.resultAnnouncementDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Candidates Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Candidates</h3>
+                
+                {isLoadingElectionCandidates ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Loading candidates...</p>
+                  </div>
+                ) : electionCandidates.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">No candidates found for this election.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {electionCandidates.map((candidate: any) => (
+                      <div
+                        key={candidate._id}
+                        className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarFallback>{candidate.name?.charAt(0) || "C"}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-medium">{candidate.name}</h4>
+                              <p className="text-sm text-muted-foreground">{candidate.department || "N/A"}</p>
+                            </div>
+                          </div>
+                          {candidate.statement && (
+                            <div className="mt-2">
+                              <p className="text-sm italic">{candidate.statement}</p>
+                            </div>
+                          )}
+                        </div>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            candidate.status === "Approved"
+                              ? "bg-green-100 text-green-800"
+                              : candidate.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-orange-100 text-orange-800"
+                          }`}
+                        >
+                          {candidate.status || "Pending"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button onClick={() => setShowElectionDetailsModal(false)}>
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

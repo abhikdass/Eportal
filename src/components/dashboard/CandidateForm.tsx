@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -85,21 +85,126 @@ const CandidateForm = ({
 }: CandidateFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [elections, setElections] = useState([]);
+  const [selectedElection, setSelectedElection] = useState<string>("");
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingApplicationId, setEditingApplicationId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData,
   });
 
+  useEffect(() => {
+    fetchActiveElections();
+    
+    // Check if we're in edit mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    if (editId) {
+      setIsEditMode(true);
+      setEditingApplicationId(editId);
+      fetchApplicationForEdit(editId);
+    }
+  }, []);
+
+  const fetchActiveElections = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/elections/active`);
+      if (response.ok) {
+        const data = await response.json();
+        setElections(Array.isArray(data) ? data : [data]);
+      }
+    } catch (error) {
+      console.error("Error fetching elections:", error);
+    }
+  };
+
+  const fetchApplicationForEdit = async (applicationId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/application/${applicationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const application = await response.json();
+        // Populate form with existing data
+        form.reset({
+          fullName: application.name,
+          studentId: application.StudentId,
+          email: application.email,
+          phoneNumber: application.phone,
+          position: application.position,
+          statement: application.statement,
+        });
+        setSelectedElection(application.electionId._id);
+      }
+    } catch (error) {
+      console.error("Error fetching application:", error);
+    }
+  };
+
   const handleSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      onSubmit(data);
-      setShowSuccessDialog(true);
+      const token = localStorage.getItem("token");
+      const url = isEditMode 
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/user/application/${editingApplicationId}`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/user/apply-candidate`;
+      
+      const method = isEditMode ? "PUT" : "POST";
+      
+      const requestBody = isEditMode 
+        ? {
+            name: data.fullName,
+            phone: data.phoneNumber,
+            statement: data.statement,
+            position: data.position,
+          }
+        : {
+            name: data.fullName,
+            StudentId: data.studentId,
+            email: data.email,
+            phone: data.phoneNumber,
+            statement: data.statement,
+            position: data.position,
+            electionId: selectedElection,
+          };
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        onSubmit(data);
+        setShowSuccessDialog(true);
+        
+        if (!isEditMode) {
+          form.reset();
+          setSelectedElection("");
+        }
+      } else {
+        const errorData = await response.json();
+        console.error("Submission failed:", errorData);
+        // Handle specific error cases
+        if (errorData.message.includes("already applied")) {
+          alert("You have already applied for this election. You can only have one application per election.");
+        } else {
+          alert(errorData.message || "Failed to submit application");
+        }
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
+      alert("An error occurred while submitting your application");
     } finally {
       setIsSubmitting(false);
     }
@@ -159,13 +264,52 @@ const CandidateForm = ({
                       <FormItem>
                         <FormLabel>Student ID</FormLabel>
                         <FormControl>
-                          <Input placeholder="S12345" {...field} />
+                          <Input 
+                            placeholder="S12345" 
+                            {...field} 
+                            disabled={isEditMode}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                {/* Add Election Selection */}
+                {!isEditMode && (
+                  <div>
+                    <FormField
+                      control={form.control}
+                      name="election"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Select Election</FormLabel>
+                          <Select
+                            value={selectedElection}
+                            onValueChange={setSelectedElection}
+                            required
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose an election to apply for" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {elections.map((election) => (
+                                <SelectItem key={election._id} value={election._id}>
+                                  {election.title} - {election.post}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Select the election you wish to apply for.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
@@ -179,6 +323,7 @@ const CandidateForm = ({
                             type="email"
                             placeholder="john.doe@example.com"
                             {...field}
+                            disabled={isEditMode}
                           />
                         </FormControl>
                         <FormMessage />
