@@ -279,35 +279,28 @@ const CandidateForm = ({
                 {/* Add Election Selection */}
                 {!isEditMode && (
                   <div>
-                    <FormField
-                      control={form.control}
-                      name="election"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Select Election</FormLabel>
-                          <Select
-                            value={selectedElection}
-                            onValueChange={setSelectedElection}
-                            required
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose an election to apply for" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {elections.map((election) => (
-                                <SelectItem key={election._id} value={election._id}>
-                                  {election.title} - {election.post}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Select the election you wish to apply for.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormItem>
+                      <FormLabel>Position</FormLabel>
+                      <Select
+                        value={selectedElection}
+                        onValueChange={setSelectedElection}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose an election to apply for" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {elections.map((election) => (
+                            <SelectItem key={election._id} value={election._id}>
+                              {election.title} - {election.post}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select the election you wish to apply for.
+                      </FormDescription>
+                    </FormItem>
                   </div>
                 )}
 
@@ -344,41 +337,6 @@ const CandidateForm = ({
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="position"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Position</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a position" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {positions.map((position) => (
-                            <SelectItem
-                              key={position.value}
-                              value={position.value}
-                            >
-                              {position.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Select the position you wish to run for in the election.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="statement"
