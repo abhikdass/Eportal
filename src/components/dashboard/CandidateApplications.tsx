@@ -4,14 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Edit, 
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Edit,
   Trash2,
-  AlertCircle 
+  AlertCircle,
+  PlusCircle
 } from "lucide-react";
 
 interface Application {
@@ -144,10 +145,16 @@ const CandidateApplications: React.FC = () => {
       )}
 
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">My Applications</h2>
-        <Badge variant="outline" className="text-sm">
-          {applications.length} Applications
-        </Badge>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold">My Applications</h2>
+          <Badge variant="outline" className="text-sm">
+            {applications.length} Applications
+          </Badge>
+        </div>
+        <Button onClick={() => (window.location.href = "/dashboard/user?tab=candidate")}>
+          <PlusCircle className="h-4 w-4 mr-2" />
+          New Application
+        </Button>
       </div>
 
       {applications.length === 0 ? (
@@ -156,6 +163,13 @@ const CandidateApplications: React.FC = () => {
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-lg font-medium text-gray-600 mb-2">No Applications Yet</p>
             <p className="text-gray-500">You haven't submitted any candidate applications.</p>
+            <Button
+              className="mt-4"
+              onClick={() => (window.location.href = "/dashboard/user?tab=candidate")}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Create Application
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -194,7 +208,7 @@ const CandidateApplications: React.FC = () => {
                       <p className="text-sm">{application.email}</p>
                       <p className="text-sm">{application.phone}</p>
                     </div>
-                    
+
                     <div>
                       <p className="text-sm font-medium text-gray-600">Campaign Statement</p>
                       <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
@@ -211,17 +225,16 @@ const CandidateApplications: React.FC = () => {
 
                     <div className="flex justify-between items-center pt-2">
                       <div className="text-xs text-gray-500">
-                        <p>Applied: {new Date(application.createdAt).toLocaleDateString()}</p>
-                        <p>Updated: {new Date(application.updatedAt).toLocaleDateString()}</p>
+                        <p>Applied: {new Date(application.createdAt).toLocaleString()}</p>
+                        <p>Updated: {new Date(application.updatedAt).toLocaleString()}</p>
                       </div>
-                      
+
                       {application.status === "pending" && (
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              // Navigate to edit form with application data
                               window.location.href = `/dashboard/user?tab=candidate&edit=${application._id}`;
                             }}
                           >

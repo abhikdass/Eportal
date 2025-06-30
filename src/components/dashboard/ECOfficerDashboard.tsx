@@ -43,6 +43,7 @@ import {
   GraduationCap,
   BookOpen,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ECOfficerDashboardProps {
   username?: string;
@@ -56,12 +57,50 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
   },
 }) => {
   const [username, setUsername] = useState<string>("EC Officer");
-  
+  const navigate = useNavigate();
   useEffect(() => {
+    if (localStorage.getItem("token") === null) {
+      navigate("/"); // Redirect to homepage
+    }
     const storedName = localStorage.getItem("name");
     if (storedName) setUsername(storedName);
   }, []);
 
+   const fetchElectionResults = async (electionId: string) => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/vote/declare-results/${electionId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Election results data:", data); // Debug log
+          setElectionResults(data); // Store the full response data
+          
+        } else if (response.status === 400) {
+          const errorData = await response.json();
+          setAlert({ 
+            type: "error", 
+            message: `Results will be available at ${new Date(errorData.availableAt).toLocaleString()}` 
+          });
+          setTimeout(() => setAlert(null), 5000);
+        } else {
+          const errorData = await response.json();
+          setAlert({ 
+            type: "error", 
+            message: errorData.message || "Failed to fetch election results" 
+          });
+          setTimeout(() => setAlert(null), 3000);
+        }
+      } catch (error) {
+        console.error("Failed to fetch election results:", error);
+        setAlert({ type: "error", message: "Failed to load election results" });
+        setTimeout(() => setAlert(null), 3000);
+      }
+    };
   // Fetch students list from API
   const fetchStudents = async () => {
     try {
@@ -219,7 +258,7 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to create election");
+      if (!response.ok) throw new Error(data.error || "Failed to create election");
 
       await fetchElections();
       setNewElection({
@@ -272,6 +311,42 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
     }
   };
 
+  const handleDeleteElection = async (electionId: string) => {
+    try {
+      // Confirm deletion
+      const confirmDelete = window.confirm("Are you sure you want to delete this election? This action cannot be undone.");
+      if (!confirmDelete) return;
+
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ec/election/${electionId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete election");
+      }
+
+      // Refresh elections list after successful deletion
+      await fetchElections();
+      setAlert({
+        type: "success",
+        message: "Election deleted successfully!",
+      });
+      setTimeout(() => setAlert(null), 3000);
+    } catch (error: any) {
+      console.error("Failed to delete election:", error);
+      setAlert({ 
+        type: "error", 
+        message: error.message || "Failed to delete election" 
+      });
+      setTimeout(() => setAlert(null), 3000);
+    }
+  };
+
   // Fetch candidates for a specific election
   const fetchElectionCandidates = async (electionId: string) => {
     try {
@@ -310,6 +385,8 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
   const [isLoadingElections, setIsLoadingElections] = useState(true);
   const [showCreateElectionForm, setShowCreateElectionForm] = useState(false);
   // Add new state for election details and candidates
+  const [electionResults, setElectionResults] = useState<any>(null);
+  
   const [showElectionDetailsModal, setShowElectionDetailsModal] = useState(false);
   const [selectedElection, setSelectedElection] = useState(null);
   const [electionCandidates, setElectionCandidates] = useState([]);
@@ -365,11 +442,6 @@ const ECOfficerDashboard: React.FC<ECOfficerDashboardProps> = ({
     {
       id: "elections",
       label: "Election Management",
-      icon: <Calendar className="h-5 w-5" />,
-    },
-    {
-      id: "dates",
-      label: "Election Dates",
       icon: <Calendar className="h-5 w-5" />,
     },
     {
@@ -841,11 +913,11 @@ const handleRemoveStudent = async (id: number) => {
                         <span className="text-sm text-muted-foreground">
                           {new Date(
                             electionDates.nominationStart,
-                          ).toLocaleDateString()}{" "}
+                          ).toLocaleString()}{" "}
                           -{" "}
                           {new Date(
                             electionDates.nominationEnd,
-                          ).toLocaleDateString()}
+                          ).toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
@@ -853,11 +925,11 @@ const handleRemoveStudent = async (id: number) => {
                         <span className="text-sm text-muted-foreground">
                           {new Date(
                             electionDates.campaignStart,
-                          ).toLocaleDateString()}{" "}
+                          ).toLocaleString()}{" "}
                           -{" "}
                           {new Date(
                             electionDates.campaignEnd,
-                          ).toLocaleDateString()}
+                          ).toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -865,7 +937,7 @@ const handleRemoveStudent = async (id: number) => {
                         <span className="text-sm text-muted-foreground">
                           {new Date(
                             electionDates.votingDate,
-                          ).toLocaleDateString()}
+                          ).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -1087,7 +1159,7 @@ const handleRemoveStudent = async (id: number) => {
                       {election.post}
                     </span>
                     <span>
-                      Voting: {new Date(election.votingDate).toLocaleDateString()}
+                      Voting: {new Date(election.votingDate).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -1121,6 +1193,14 @@ const handleRemoveStudent = async (id: number) => {
                   >
                     {election.active ? "Deactivate" : "Activate"}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDeleteElection(election._id)}
+                    className="text-red-600 hover:text-red-700 border-red-200"
+                  >
+                    Delete
+                  </Button>
                 </div>
               </motion.div>
             ))}
@@ -1131,123 +1211,6 @@ const handleRemoveStudent = async (id: number) => {
   </motion.div>
 )}
          
-          {/* Election Dates */}
-          {activeTab === "dates" && (
-            <motion.div variants={itemVariants}>
-              <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Set Election Dates
-              </h1>
-
-              <Card className="hover:shadow-lg transition-all duration-300">
-                <CardHeader>
-                  <CardTitle>Election Schedule Configuration</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="nomination-start">
-                        Nomination Start Date
-                      </Label>
-                      <Input
-                        id="nomination-start"
-                        type="date"
-                        value={electionDates.nominationStart}
-                        onChange={(e) =>
-                          setElectionDates({
-                            ...electionDates,
-                            nominationStart: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="nomination-end">
-                        Nomination End Date
-                      </Label>
-                      <Input
-                        id="nomination-end"
-                        type="date"
-                        value={electionDates.nominationEnd}
-                        onChange={(e) =>
-                          setElectionDates({
-                            ...electionDates,
-                            nominationEnd: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="campaign-start">
-                        Campaign Start Date
-                      </Label>
-                      <Input
-                        id="campaign-start"
-                        type="date"
-                        value={electionDates.campaignStart}
-                        onChange={(e) =>
-                          setElectionDates({
-                            ...electionDates,
-                            campaignStart: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="campaign-end">Campaign End Date</Label>
-                      <Input
-                        id="campaign-end"
-                        type="date"
-                        value={electionDates.campaignEnd}
-                        onChange={(e) =>
-                          setElectionDates({
-                            ...electionDates,
-                            campaignEnd: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="voting-date">Voting Date</Label>
-                      <Input
-                        id="voting-date"
-                        type="date"
-                        value={electionDates.votingDate}
-                        onChange={(e) =>
-                          setElectionDates({
-                            ...electionDates,
-                            votingDate: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="result-date">
-                        Result Announcement Date
-                      </Label>
-                      <Input
-                        id="result-date"
-                        type="date"
-                        value={electionDates.resultDate}
-                        onChange={(e) =>
-                          setElectionDates({
-                            ...electionDates,
-                            resultDate: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleDateSave}
-                    className="mt-6 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 transition-all duration-300"
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Election Dates
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
 
           {/* Candidate Approval */}
           {activeTab === "candidates" && (
@@ -1705,90 +1668,115 @@ const handleRemoveStudent = async (id: number) => {
                   <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <span className="font-medium">Nomination Period</span>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(selectedElection.nominationStartDate).toLocaleDateString()} - {" "}
-                      {new Date(selectedElection.nominationEndDate).toLocaleDateString()}
+                      {new Date(selectedElection.nominationStartDate).toLocaleString()} - {" "}
+                      {new Date(selectedElection.nominationEndDate).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                     <span className="font-medium">Campaign Period</span>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(selectedElection.campaignStartDate).toLocaleDateString()} - {" "}
-                      {new Date(selectedElection.campaignEndDate).toLocaleDateString()}
+                      {new Date(selectedElection.campaignStartDate).toLocaleString()} - {" "}
+                      {new Date(selectedElection.campaignEndDate).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                     <span className="font-medium">Voting Date</span>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(selectedElection.votingDate).toLocaleDateString()}
+                      {new Date(selectedElection.votingDate).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <span className="font-medium">Results Announcement</span>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(selectedElection.resultAnnouncementDate).toLocaleDateString()}
+                      {new Date(selectedElection.resultAnnouncementDate).toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
               
               {/* Candidates Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Candidates</h3>
-                
-                {isLoadingElectionCandidates ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Loading candidates...</p>
-                  </div>
-                ) : electionCandidates.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">No candidates found for this election.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {electionCandidates.map((candidate: any) => (
-                      <div
-                        key={candidate._id}
-                        className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback>{candidate.name?.charAt(0) || "C"}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-medium">{candidate.name}</h4>
-                              <p className="text-sm text-muted-foreground">{candidate.department || "N/A"}</p>
-                            </div>
-                          </div>
-                          {candidate.statement && (
-                            <div className="mt-2">
-                              <p className="text-sm italic">{candidate.statement}</p>
-                            </div>
-                          )}
-                        </div>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            candidate.status === "Approved"
-                              ? "bg-green-100 text-green-800"
-                              : candidate.status === "Rejected"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-orange-100 text-orange-800"
-                          }`}
-                        >
-                          {candidate.status || "Pending"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           )}
-          <div className="flex justify-end gap-2 mt-4">
+          
+          {/* Election Results Display */}
+          {electionResults && (
+            <Alert className="mt-4 border-green-200 bg-green-50 dark:bg-green-900/20">
+              <AlertDescription className="text-green-700 dark:text-green-300">
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Election Results</h3>
+                  <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border">
+                    {electionResults.message && (
+                      <p className="mb-3 font-medium text-green-600 dark:text-green-400">
+                        {electionResults.message}
+                      </p>
+                    )}
+                    
+                    {electionResults.winners && electionResults.winners.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                          {electionResults.isTie ? "Tied Winners:" : "Winner:"}
+                        </h4>
+                        {electionResults.winners.map((winner: any, index: number) => (
+                          <div key={index} className="bg-green-100 dark:bg-green-800 p-3 rounded-md">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium text-lg">{winner.name}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                  Student ID: {winner.studentId}
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                  Email: {winner.email}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                  {winner.voteCount}
+                                </p>
+                                <p className="text-xs text-gray-500">votes</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {electionResults.declaredAt && (
+                          <p className="text-xs text-gray-500 mt-3">
+                            Results declared on: {new Date(electionResults.declaredAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Fallback: Show raw JSON if structure is unexpected */}
+                    {(!electionResults.winners || electionResults.winners.length === 0) && (
+                      <div className="max-h-60 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(electionResults, null, 2)}</pre>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          
+          {/* Dialog Footer */}
+          <div className="flex justify-between items-center mt-6 pt-4 border-t">
+            <div className="flex gap-2">
+              {selectedElection && !electionResults && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchElectionResults(selectedElection._id)}
+                >
+                  View Results
+                </Button>
+              )}
+            </div>
             <Button onClick={() => setShowElectionDetailsModal(false)}>
               Close
             </Button>
           </div>
+          
         </DialogContent>
       </Dialog>
     </div>

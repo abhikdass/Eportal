@@ -229,11 +229,15 @@ const VotePortal: React.FC<VotePortalProps> = ({ onVoteSuccess }) => {
         setSelectedCandidate(null);
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to cast vote");
+        setAlert({ type: "warning", message: errorData.error || "Failed to cast vote" });
+        // Optionally, refresh vote status if voting has ended
+        // if (errorData.resultAnnouncementDate) {
+        //   await fetchVoteStatus();
+        // }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error casting vote:", error);
-      setAlert({ type: "error", message: error.message || "Failed to cast vote" });
+      // setAlert({ type: "error", message: "Failed to cast vote" });
     } finally {
       setIsSubmittingVote(false);
     }
@@ -336,11 +340,11 @@ const VotePortal: React.FC<VotePortalProps> = ({ onVoteSuccess }) => {
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground">Voting Date</h4>
-                  <p className="text-lg">{new Date(activeElection.votingDate).toLocaleDateString()}</p>
+                  <p className="text-lg">{new Date(activeElection.votingDate).toLocaleString()}</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground">Results Date</h4>
-                  <p className="text-lg">{new Date(activeElection.resultAnnouncementDate).toLocaleDateString()}</p>
+                  <p className="text-lg">{new Date(activeElection.resultAnnouncementDate).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -368,7 +372,7 @@ const VotePortal: React.FC<VotePortalProps> = ({ onVoteSuccess }) => {
               <div>
                 <h3 className="font-medium text-amber-800">Voting Not Yet Available</h3>
                 <p className="text-amber-700 text-sm mt-1">
-                  Voting will be available on {new Date(activeElection.votingDate).toLocaleDateString()}.
+                  Voting will be available on {new Date(activeElection.votingDate).toLocaleString()}.
                   Please check back during the voting period.
                 </p>
               </div>
@@ -423,7 +427,7 @@ const VotePortal: React.FC<VotePortalProps> = ({ onVoteSuccess }) => {
                           <div>
                             <CardTitle className="text-lg">{candidate.name}</CardTitle>
                             <CardDescription className="text-sm">
-                              {candidate.department || "N/A"}
+                              {candidate.StudentId || "N/A"}
                             </CardDescription>
                           </div>
                         </div>

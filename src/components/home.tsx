@@ -155,7 +155,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
               <div className="bg-white/10 p-4 rounded-xl border border-white/20 shadow-md">
                 <h3 className="text-lg text-blue-400 font-semibold">Start Date</h3>
                 <p className="text-2xl text-white font-bold">
-                  {votingStart.toLocaleDateString("en-GB", {
+                  {votingStart.toLocaleString("en-GB", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -165,7 +165,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
               <div className="bg-white/10 p-4 rounded-xl border border-white/20 shadow-md">
                 <h3 className="text-lg text-blue-400 font-semibold">Start Day</h3>
                 <p className="text-2xl text-white font-bold">
-                  {votingStart.toLocaleDateString("en-GB", { weekday: "long" })}
+                  {votingStart.toLocaleString("en-GB", { weekday: "long" })}
                 </p>
               </div>
               <div className="bg-gradient-to-br from-pink-500 via-purple-600 to-blue-600 p-4 rounded-xl shadow-2xl border border-white/30 text-white animate-pulse">
@@ -176,13 +176,13 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
               <div className="bg-white/10 p-4 rounded-xl border border-white/20 shadow-md">
                 <h3 className="text-lg text-green-400 font-semibold">End Day</h3>
                 <p className="text-2xl text-white font-bold">
-                  {votingEnd.toLocaleDateString("en-GB", { weekday: "long" })}
+                  {votingEnd.toLocaleString("en-GB", { weekday: "long" })}
                 </p>
               </div>
               <div className="bg-white/10 p-4 rounded-xl border border-white/20 shadow-md">
                 <h3 className="text-lg text-green-400 font-semibold">End Date</h3>
                 <p className="text-2xl text-white font-bold">
-                  {votingEnd.toLocaleDateString("en-GB", {
+                  {votingEnd.toLocaleString("en-GB", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -271,7 +271,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
             {[
               {
                 title: "Secure Voting",
-                description: "End-to-end encryption ensures vote integrity",
+                description: "*End‑to‑end encryption coming soon ensures vote integrity",
                 icon: "🔒",
               },
               {
@@ -493,7 +493,7 @@ setTimeToEnd(Math.max(0, votingEnd.getTime() - current.getTime()));
       },
       {
         title: "Secure",
-        desc: "End-to-end encryption, identity validation, and role-based control.",
+        desc: "*End‑to‑end encryption coming soon, identity validation, and role-based control.",
         icon: "🔐",
       },
       {

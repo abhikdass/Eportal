@@ -35,6 +35,7 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface AdminDashboardProps {
   username?: string;
@@ -60,6 +61,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   activeElections: 0,
   totalVotes: 0,
 });
+  const navigate = useNavigate();
 
 const [systemStats, setSystemStats] = useState({
   cpuUsage: 0,
@@ -77,6 +79,9 @@ const [memoryStats, setMemoryStats] = useState({
 
 
   useEffect(() => {
+        if (localStorage.getItem("token") === null) {
+      navigate("/"); // Redirect to homepage
+    }
     const storedName = localStorage.getItem("name");
     const storedRole = localStorage.getItem("role");
     if (storedName) setUserName(storedName);

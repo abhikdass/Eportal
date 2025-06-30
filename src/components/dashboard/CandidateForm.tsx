@@ -51,7 +51,6 @@ const formSchema = z.object({
     .string()
     .min(5, { message: "Student ID must be at least 5 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  position: z.string().min(1, { message: "Please select a position." }),
   statement: z
     .string()
     .min(50, { message: "Statement must be at least 50 characters." })
@@ -77,7 +76,6 @@ const CandidateForm = ({
     fullName: "",
     studentId: "",
     email: "",
-    position: "",
     statement: "",
     phoneNumber: "",
   },
@@ -137,7 +135,6 @@ const CandidateForm = ({
           studentId: application.StudentId,
           email: application.email,
           phoneNumber: application.phone,
-          position: application.position,
           statement: application.statement,
         });
         setSelectedElection(application.electionId._id);
@@ -162,7 +159,6 @@ const CandidateForm = ({
             name: data.fullName,
             phone: data.phoneNumber,
             statement: data.statement,
-            position: data.position,
           }
         : {
             name: data.fullName,
@@ -170,7 +166,6 @@ const CandidateForm = ({
             email: data.email,
             phone: data.phoneNumber,
             statement: data.statement,
-            position: data.position,
             electionId: selectedElection,
           };
 
@@ -210,13 +205,13 @@ const CandidateForm = ({
     }
   };
 
-  const positions = [
-    { value: "president", label: "President" },
-    { value: "vicePresident", label: "Vice President" },
-    { value: "secretary", label: "Secretary" },
-    { value: "treasurer", label: "Treasurer" },
-    { value: "representative", label: "Class Representative" },
-  ];
+  // const positions = [
+  //   { value: "president", label: "President" },
+  //   { value: "vicePresident", label: "Vice President" },
+  //   { value: "secretary", label: "Secretary" },
+  //   { value: "treasurer", label: "Treasurer" },
+  //   { value: "representative", label: "Class Representative" },
+  // ];
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 bg-background">

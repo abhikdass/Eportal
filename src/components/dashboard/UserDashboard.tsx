@@ -15,15 +15,16 @@ import {
   LogOut,
   ChevronRight,
   Home,
-  Calendar,
+  User,
   Clock,
   CheckCircle,
   AlertCircle,
   TrendingUp,
 } from "lucide-react";
+import CandidateApplications from "./CandidateApplications";
 import CandidateForm from "./CandidateForm";
 import VotePortal from "./VotePortal";
-
+import { useNavigate } from "react-router-dom";
 interface UserDashboardProps {
   username?: string;
   onLogout?: () => void;
@@ -49,16 +50,18 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   const [candidates, setCandidates] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<any[]>([]);
   const [voteStatus, setVoteStatus] = useState<any>(null);
-  
+  const [resultAnnouncement, setResultAnnouncement] = useState<boolean>(false);
   // Loading states
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingElections, setIsLoadingElections] = useState<boolean>(true);
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
-  
+  const navigate = useNavigate();
   useEffect(() => {
-    const storedName = localStorage.getItem("name");
+     const storedName = localStorage.getItem("name");
     if (storedName) setUsername(storedName);
-    
+  if (localStorage.getItem("token") === null) {
+      navigate("/"); // Redirect to homepage
+    }
     // Initial data load
     fetchElections();
     fetchMyApplications();
@@ -178,6 +181,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       if (response.ok) {
         const data = await response.json();
         setLiveStats(data);
+        setResultAnnouncement(data.status);
+
       }
     } catch (error) {
       console.error("Failed to fetch live stats:", error);
@@ -211,14 +216,15 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
 
   // Refresh data periodically for live updates
   useEffect(() => {
-    if (activeElection && activeTab === "stats") {
+    if (!resultAnnouncement && activeElection && activeTab === "stats") {
+    console.log("Lives Updates:", resultAnnouncement);
       const interval = setInterval(() => {
         fetchLiveStats(activeElection._id);
       }, 30000); // Update every 30 seconds
 
       return () => clearInterval(interval);
     }
-  }, [activeElection, activeTab]);
+  }, [activeElection, activeTab, resultAnnouncement]);
 
   // Refresh data when tab changes
   useEffect(() => {
@@ -229,6 +235,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       fetchCandidatesForElection(activeElection._id);
     } else if (activeTab === "stats" && activeElection) {
       fetchLiveStats(activeElection._id);
+      fetchElectionResults(activeElection._id);
     }
   }, [activeTab]);
 
@@ -238,6 +245,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       id: "candidate",
       label: "Apply Candidate Form",
       icon: <FileEdit className="h-5 w-5" />,
+    },
+    {
+      id: "MyApplications",
+      label: "My Applications",
+      icon: <User className="h-5 w-5" />,
     },
     { id: "vote", label: "Vote Portal", icon: <Vote className="h-5 w-5" /> },
     {
@@ -462,7 +474,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                               {application.electionId?.title || "Election"}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Applied: {new Date(application.createdAt).toLocaleDateString()}
+                              Applied: {new Date(application.createdAt).toLocaleString()}
                             </p>
                           </div>
                           <span
@@ -492,36 +504,36 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
 
                       {[
                         {
-                          date: new Date(activeElection.nominationStartDate).toLocaleDateString(),
+                          date: new Date(activeElection.nominationStartDate).toLocaleString(),
                           title: "Nominations Open",
                           status: new Date() > new Date(activeElection.nominationStartDate) ? "completed" : "upcoming",
                         },
                         {
-                          date: new Date(activeElection.nominationEndDate).toLocaleDateString(),
+                          date: new Date(activeElection.nominationEndDate).toLocaleString(),
                           title: "Nominations Close",
                           status: new Date() > new Date(activeElection.nominationEndDate) ? "completed" : 
                                  new Date() > new Date(activeElection.nominationStartDate) ? "current" : "upcoming",
                         },
                         {
-                          date: new Date(activeElection.campaignStartDate).toLocaleDateString(),
+                          date: new Date(activeElection.campaignStartDate).toLocaleString(),
                           title: "Campaigning Begins",
                           status: new Date() > new Date(activeElection.campaignStartDate) ? "completed" : 
                                  new Date() > new Date(activeElection.nominationEndDate) ? "current" : "upcoming",
                         },
                         {
-                          date: new Date(activeElection.campaignEndDate).toLocaleDateString(),
+                          date: new Date(activeElection.campaignEndDate).toLocaleString(),
                           title: "Campaigning Ends",
                           status: new Date() > new Date(activeElection.campaignEndDate) ? "completed" : 
                                  new Date() > new Date(activeElection.campaignStartDate) ? "current" : "upcoming",
                         },
                         {
-                          date: new Date(activeElection.votingDate).toLocaleDateString(),
+                          date: new Date(activeElection.votingDate).toLocaleString(),
                           title: "Voting Day",
                           status: new Date() > new Date(activeElection.votingDate) ? "completed" : 
                                  new Date().toDateString() === new Date(activeElection.votingDate).toDateString() ? "current" : "upcoming",
                         },
                         {
-                          date: new Date(activeElection.resultAnnouncementDate).toLocaleDateString(),
+                          date: new Date(activeElection.resultAnnouncementDate).toLocaleString(),
                           title: "Results Announcement",
                           status: new Date() > new Date(activeElection.resultAnnouncementDate) ? "completed" : 
                                  new Date() > new Date(activeElection.votingDate) ? "current" : "upcoming",
@@ -566,6 +578,16 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
               <CandidateForm />
             </motion.div>
           )}
+          
+          {/* My Applications Tab */}
+          {activeTab === "MyApplications" && (
+            <motion.div variants={itemVariants}>
+              <h1 className="text-3xl font-bold mb-6">My Applications</h1>
+              <CandidateApplications />
+            </motion.div>
+          )}
+
+          {/* About Tab */}
 
           {/* Vote Portal Tab */}
           {activeTab === "vote" && (
@@ -655,13 +677,6 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                     >
                       {isLoadingStats ? "Refreshing..." : "Refresh"}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchElectionResults(activeElection._id)}
-                    >
-                      View Results
-                    </Button>
                   </div>
                 )}
               </div>
@@ -739,12 +754,18 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                         <CheckCircle className="h-5 w-5" />
                         Election Results
                       </h2>
-                      {electionResults ? (
+                       {electionResults ? (
                         <div className="space-y-4">
                           <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                          {resultAnnouncement ? (
                             <h3 className="font-bold text-amber-800 dark:text-amber-200 mb-2">
                               🏆 Winners
                             </h3>
+                          ) : (
+                              <h3 className="font-bold text-amber-800 dark:text-amber-300 mb-2">
+                                🏆 Leading in votes
+                              </h3>
+                          )}
                             {electionResults.winners?.map((winner: any, index: number) => (
                               <div key={winner.candidateId} className="mb-2">
                                 <p className="font-medium">{winner.candidateName}</p>
